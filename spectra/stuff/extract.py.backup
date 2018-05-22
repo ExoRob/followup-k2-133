@@ -1,0 +1,97 @@
+"""
+Code to extract spectra from WHT/LIRIS
+
+Process:
+Note: Bias taken and subtracted for each exposure // Dark flats_fits not needed either.
+1) Flat field correction - dome flats_fits
+2) Sky subtraction - nod pointings
+3) Curvature correction
+4) Wavelength calibration - Arc lamp spectra
+5) Offset computation - header AUTOX/AUTOY values
+6) Spectra co-addition
+7) Extraction
+8) Telluric absorption correction - standard star
+
+Target: LP 358-499
+Standard: HD 27267 (A0V)
+"""
+
+import glob, os
+from astropy.io import fits
+import matplotlib.pyplot as plt
+import numpy as np
+import warnings
+warnings.filterwarnings("ignore", message="The following header keyword is invalid or follows an unrecognized "
+                                          "non-standard convention")
+
+nights = ['20170926', '20171009']       # dates of observations
+ds = 1                                  # dataset to use
+
+base_dir = nights[ds] + '/'             # folder of dataset
+
+flats_fits, arcs_fits, specs_fits = [], [], []
+flats_imgs, arcs_imgs, specs_imgs = [], [], []
+flats_dome_hk_bright = {'filename':[], 'raw_img':[]}
+all_objects = []
+for j in range(2605993, 2606703):
+    try:
+        filename = base_dir + 'r' + str(j) + '.fit'
+        f = fits.open(filename)
+        obj = f[0].header['OBJECT']
+        exp = f[1].header['EXPTIME']
+
+        if j in range(2605993, 2606099) + range(2606106, 2606127):
+            flats_fits.append(filename)
+            flats_imgs.append(f[1].data)
+            print filename, obj, exp
+        elif j in range(2606127, 2606138):
+            arcs_fits.append(filename)
+            arcs_imgs.append(f[1].data)
+        elif j in range(2606648, 2606703):
+            specs_fits.append(filename)
+            specs_imgs.append(f[1].data)
+
+        all_objects.append(obj)
+
+    except IOError:
+        pass
+
+all_fits = flats_fits + arcs_fits + specs_fits
+
+print list(set(all_objects))
+
+# s, fl = fits.open(specs_fits[0])[1].data, fits.open(flats_fits[0])[1].data
+# print s, '\n', s-fl
+# plt.imshow(s-fl, origin = 'lower', vmin = 0.0, vmax = 600.0, cmap='gray')
+# plt.colorbar()
+# plt.show()
+
+fname = base_dir+'r2606687.fit' # LP
+
+f = fits.open(fname)        # open .fit file
+p, d = f[0], f[1]           # primary, data
+
+# print f.info()
+# print p.header, '\n', d.header
+# print p.header['OBJECT']
+
+rows = d.data           # rows of pixels along x axis
+s_row, ap = 449, 2      # spectrum mean row, aperture
+
+# print type(rows), '\n', rows
+
+spec = [0.0] * len(rows)
+for j in range(s_row-ap, s_row+ap+1):
+    # print j
+    # plt.plot(rows[j], label=j)
+    for k in range(len(rows)):
+        spec[k] += rows[j][k]
+# plt.legend()
+# plt.plot(spec)
+# plt.show()
+
+
+# plt.imshow(rows, origin = 'lower', vmin = 100.0, vmax = 600.0, cmap='gray')
+# plt.colorbar()
+# plt.title(fname)
+# plt.show()

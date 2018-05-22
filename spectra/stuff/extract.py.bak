@@ -1,0 +1,477 @@
+"""
+Code to extract spectra from WHT/LIRIS
+
+Process:
+Note: Bias taken and subtracted for each exposure // Dark flats_fits not needed either.
+1) Flat field correction - dome + tungsten lamp flats
+2) Sky subtraction - nod pointings / near aperture
+3) Curvature correction - not needed?
+4) Wavelength calibration - Arc lamp spectra - Ar + Xe
+5) Offset computation - header AUTOX/AUTOY / manual values
+6) Spectra co-addition
+7) Extraction
+8) Telluric absorption correction - standard star
+
+Target: LP 358-499
+Standard: HD 27267 (A0V)
+"""
+
+import glob, os, sys, shutil
+from astropy.io import fits
+import matplotlib.pyplot as plt
+import numpy as np
+import warnings
+warnings.filterwarnings("ignore", message="The following header keyword is invalid or follows an unrecognized "
+                                          "non-standard convention")
+cols = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
+
+def pix2wav(lims, xp):
+    # change axis scale
+    p0, p1, w0, w1 = lims           # axes limits - pixels and wavelength
+
+    # pa, wa = np.linspace(p0, p1, 1000), np.linspace(w0, w1, 1000)
+    # dz = np.polyfit(pa, wa, 1)
+    # xw = np.poly1d(dz)(xp)
+
+    frac = (p1 - p0) / (w1 - w0)
+    xw = frac * (xp + p0) + w0
+
+    return xw
+
+
+def onkey(event):
+    px, py = event.xdata, event.ydata   # xpos
+    # wx = pix2wav(lims, px)              # ang
+
+    if event.key=='x':
+        print 'xpos=%f'% px
+        ax1.plot(px, py, 'rx', ms=15)
+        xpos.append(px)
+        event.canvas.draw()
+    if event.key=='w':
+        print 'ang=%f'% px
+        ax1.plot(px, py, 'kx', ms=15)
+        ang.append(px)
+        event.canvas.draw()
+    if event.key=='u':
+        print 'Undid last -', len(xpos), len(ang), xpos[-1], ang[-1]
+        del xpos[-1]
+        del ang[-1]
+
+# def update(val):
+#     xmin = np.floor(sframe.val)
+#     ax2.set_xlim([xmin,xmin+1000])
+#     plt.draw()
+
+
+nights = ['20170926', '20171009']       # dates of observations
+ds = 1                                  # dataset to use
+base_dir = nights[ds] + '/'             # folder of dataset
+
+hk_range, zj_range = [1.388, 2.419], [0.887, 1.531]     # microns
+n_pix = 1024
+
+print "> Loading data ...\n"
+
+all_data = {}                           # holds data of each .fit file
+obj_names, obj_use = [], []             # unique object names and object names to use
+for fit_name in glob.glob(base_dir + '*.fit'):                                  # loop all .fit files
+    f = fits.open(fit_name)                                                     # load data
+    et_str = str(round(f[1].header['EXPTIME'], 1))
+    obj = f[0].header['OBJECT'] + '_' + f[0].header['LIRGRNAM'][-2:] + '_' + et_str     # object name
+
+    if obj not in obj_names:    # if first of object type -> add format
+        all_data[obj] = {'filenames':[], 'raw_imgs':[], 'exp_times':[], 'master':[]}    # data to save
+
+    all_data[obj]['filenames'] += [fit_name]                    # filename
+    all_data[obj]['raw_imgs'] += [f[1].data]                    # raw pixel counts
+    all_data[obj]['exp_times'] += [f[1].header['EXPTIME']]      # exposure time
+
+    # print obj, f[1].header['EXPTIME'], '\t\t', fit_name
+    # print all_data['DomeFlat-HK-Bright_hk']['exp_times']
+
+    obj_names.append(obj)
+    if 'acq' not in obj and obj not in obj_use:
+        obj_use += [obj]
+
+# for thing in sorted(set(obj_names)):   # sorted(obj_use):
+#     print thing, '-', len(all_data[thing]['raw_imgs'])
+
+# dmy1, dmy2 = [], []
+# for key in all_data.keys():
+#     dmy1 += [len(set(all_data[key]['exp_times']))]
+#     dmy2 += [len(all_data[key]['exp_times'])]
+# print dmy1, '\n', dmy2
+
+# # create master flats and arcs
+# for obj in obj_use:                         # loop each object + grism
+#     obj_data = all_data[obj]                # all data for object + grism
+#     n_imgs = len(obj_data['raw_imgs'])      # number of .fit files
+#     exp_t_set = set(obj_data['exp_times'])
+#
+#     if len(exp_t_set) == 1:             # if single exposure time
+#         print "> Creating master", obj, 'from', n_imgs, 'images ...'
+#
+#         exp_t = obj_data['exp_times'][0]        # exposure time in seconds
+#         stack = []
+#         for img in obj_data['raw_imgs']:
+#             stack.append(img)
+#         stack = np.dstack(stack)                # stack all images
+#         med_stack = np.median(stack, axis=2)    # create median image
+#         all_data[obj]['master'] = med_stack
+#
+#         master_obj = fits.PrimaryHDU(med_stack)
+#         header = {'OBJECT':obj+'_master', 'EXPTIME':exp_t}
+#         master_obj.writeto(base_dir + 'out/' + obj + '_master.fit', overwrite=True)     # save to master .fit file
+#
+#     # elif n_imgs == 1:       # if only one image -> copy to master .fit file
+#     #     print "Copying single file to master", obj, "..."
+#     #     shutil.copy(obj_data['filenames'][0], base_dir + 'out/' + obj + '_master.fit')
+#
+#     else:   # if multiple exposure times used -> normalise and combine
+#         print "\n>", obj, "has", n_imgs, "files.", set(obj_data['exp_times'])
+#         sys.exit()
+
+# print "\n> Subtracting dims from brights.\n"
+# masters = {}    # bright - dim
+# for obj in obj_use:
+#     if 'Bright' in obj and 'zJ' not in obj:     # Bright and Dim flats
+#         sub = obj.replace('-Bright', '')
+#         obj2 = obj.replace('Bright', 'Dim')
+#         masters[sub] = all_data[obj]['master'] - all_data[obj2]['master']
+#
+#     elif 'long' in obj:     # Long and Short arcs
+#         sub = obj.replace('-long', '')
+#         obj2 = obj.replace('long', 'short')
+#         masters[sub] = all_data[obj]['master'] - all_data[obj2]['master']
+#
+#     elif 'Dim' in obj or 'short' in obj:    # covered by bright/long
+#         pass    # skip
+#
+#     else:       # no subtraction needed
+#         masters[obj] = all_data[obj]['master']
+# print masters.keys()
+
+# DomeFlat_hk = all_data['DomeFlat-HK-Bright_hk']['master'] - all_data['DomeFlat-HK-Dim_hk']['master']
+# DomeFlat_zj = all_data['DomeFlat-zJ-Bright_zj']['master']
+# WFlat_zj = all_data['W-Flat-zJ-Bright_zj']['master']
+# ArcAr_zj = all_data['Arc-Ar-long_zj']['master'] - all_data['Arc-Ar-short_zj']['master']
+# ArcArXe_zj = all_data['Arc-Ar-Xe_zj']['master']
+# ArcXe_zj = all_data['Arc-Xe-long_zj']['master'] - all_data['Arc-Xe-short_zj']['master']
+# ArcXe_hk = all_data['Arc-Xe-long_hk']['master'] - all_data['Arc-Xe-short_hk']['master']
+# ArcArXe_hk = all_data['Arc-Ar-Xe_hk']['master']
+# ArcAr_hk = all_data['Arc-Ar-long_hk']['master'] - all_data['Arc-Ar-short_hk']['master']
+
+# print "\n> All master files created."
+
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+# try for A/hk - comparison + arcs - no flats, etc
+
+comp = 'A:HD27267_hk_6.0'           # comparison star
+arc_ar = 'Arc-Ar-long_hk_80.0'      # Argon arc
+arc_xe = 'Arc-Xe-long_hk_80.0'      # Xenon arc
+
+s_row, ap = 395, 5          # mean row & aperture for comp - A - hk
+x_pix = range(n_pix)        # pixel number along spectrum
+# wav_guess = np.linspace(hk_range[0], hk_range[1], n_pix)    # linear
+arc_row_ar, arc_row_xe = [0.0] * n_pix, [0.0] * n_pix       # arc spectra
+
+for j in range(s_row-ap, s_row+ap+1):   # rows to sum
+    for k in range(n_pix):              # for each pixel in row, add to pixel counts
+        arc_row_ar[k] += all_data[arc_ar]['raw_imgs'][0][j][k] / (2.0 * ap + 1.0)
+
+for j in range(s_row-ap, s_row+ap+1):   # rows to sum
+    for k in range(n_pix):              # for each pixel in row, add to pixel counts
+        arc_row_xe[k] += all_data[arc_xe]['raw_imgs'][0][j][k] / (2.0 * ap + 1.0)
+
+argon_wav, argon_i = [], []     # line list - microns
+with open('argon.lis') as f:
+    for line in f:
+        try:
+            split = line.split()
+            # print split
+            wav, intens = float(split[0])/1e4, float(split[3])
+            if hk_range[0] <= wav <= hk_range[1]+0.02 and intens > 1e3:
+                argon_wav.append(wav)
+                argon_i.append(intens)
+        except ValueError:
+            # print split
+            pass
+
+xenon_wav, xenon_i = [], []     # line list - microns
+with open('xenon.lis') as f:
+    for line in f:
+        try:
+            split = line.split()
+            # print split
+            wav, intens = float(split[0])/1e4, float(split[3])
+            if hk_range[0]-0.02 <= wav <= hk_range[1]+0.02 and intens > 1e3:
+                xenon_wav.append(wav)
+                xenon_i.append(intens)
+        except ValueError:
+            # print split
+            pass
+
+max_ar, max_xe, max_dat_ar, max_dat_xe = max(arc_row_ar), max(arc_row_xe), max(argon_i), max(xenon_i)
+argon_i, xenon_i = np.asarray(argon_i), np.asarray(xenon_i)
+
+# plt.plot(wav_guess, arc_row_ar, label='Ar', alpha=1, color=cols[0])
+# plt.plot(wav_guess, arc_row_xe, label='Xe', alpha=1, color=cols[1])
+# plt.plot(argon_wav, argon_i*max_ar/max_dat_ar, 'x', label='Ar lines', color=cols[0])
+# plt.plot(xenon_wav, xenon_i*max_xe/max_dat_xe, 'x', label='Xe lines', color=cols[1])
+# plt.legend()
+# plt.ylim(0)
+# plt.show()
+
+
+# Interactive line matching
+xpos, ang = [], []
+
+# print x_pix
+# print arc_row_ar
+# print arc_row_xe
+
+# argon_wav = [14097.5, 14654.3, 14260.8, 15050.6, 15176.8, 15306.1, 15904.0, 15993.9, 16127.1, 16184.4, 16441.1, 16524.4,
+#              16744.6, 16945.2, 17449.7, 17919.6, 18434.5, 19971.2, 19822.9, 20322.6, 20621.9, 20991.8, 21540.1, 21338.7,
+#              22083.2, 23139.5]
+
+arc_row_ar = arc_row_xe
+argon_wav = [14146.2, 14244.8, 14738.8, 15422.6, 16057.7, 16732.6, 17330.5, 18793.2, 20267.8, 21475.9, 23199.6]
+
+fig, ax1 = plt.subplots()           # pixel position
+ax2 = ax1.twiny()                   # wavelength
+ax1.plot(x_pix, arc_row_ar)
+ax1.set_xlabel('Pixel number')
+ax1.set_ylabel('Intensity')
+# ax2.plot(argon_wav, argon_i*max_ar/max_dat_ar, 'x')
+[ax2.axvline(aw, color='k') for aw in argon_wav]    # line list
+ax2.set_xlabel('Wavelength (microns)')
+# plt.minorticks_on()
+# ax2.grid(which='both', axis='x')
+# cid = fig.canvas.mpl_connect('key_press_event', onkey)
+cid = ax2.figure.canvas.mpl_connect('key_press_event', onkey)
+# plt.legend()
+
+lims = ax1.get_xlim() + ax2.get_xlim()
+# print lims
+
+# ax1.autoscale(True)
+# ax2.autoscale(True)
+# plt.subplots_adjust(bottom=0.20)
+# axframe = plt.axes([0.1, 0.1, 0.8, 0.03])
+# from matplotlib.widgets import Slider
+# sframe = Slider(axframe, 'Frame', np.min(argon_wav), np.max(argon_wav), valinit=0,valfmt='%d')
+# sframe.on_changed(update)
+
+plt.show()
+
+# pixel-wavelength by eye ...
+xpos = [11.0, 71.0, 127.0, 204.0, 213.5, 269.0, 292.0, 313.0, 365.0, 413.0, 606.0, 621.0, 724.0, 779.0]
+ang = [1.409749, 1.46532, 1.517684, 1.590403, 1.599386, 1.652437, 1.674465, 1.694521, 1.744967, 1.79209, 1.982292,
+       1.997118, 2.099184, 2.154008]
+
+# print xpos, '\n', ang
+
+# fit polynomial for wavelength solution
+poly_ord = 2    # order of polynomial to fit
+z, v = np.polyfit(xpos, ang, poly_ord, cov=True)
+sol = np.poly1d(z)
+y_sol = sol(x_pix)      # wavelength of each pixel
+
+# print v
+
+plt.plot(xpos, ang, '.', label='Data')
+plt.plot(x_pix, y_sol, label='Fit')
+plt.legend()
+plt.xlabel('Arc position')
+plt.ylabel('Line position')
+plt.show()
+
+# with open('Ar-HD-A-lines.dat', 'w') as dat:
+#     dat.write('#x_pix\twavelength\n')
+#     for i in range(len(xpos)):
+#         dat.write(str(xpos[i]) + '\t' + str(ang[i]) + '\n')
+
+hd_a_hk_spec = [0.0] * n_pix
+for j in range(s_row-ap, s_row+ap+1):   # rows to sum
+    for k in range(n_pix):          # for each pixel in row, add to pixel counts
+        hd_a_hk_spec[k] += all_data[comp]['raw_imgs'][0][j][k] / (2.0 * ap + 1.0)
+
+a0v_file = np.genfromtxt('uka0v.dat', delimiter='  ', dtype=float)
+a0v_wav_full, a0v_spec_full = a0v_file[:, 0] / 1e4, a0v_file[:, 1]
+a0v_wav, a0v_spec, a0v_wav_c, a0v_spec_c = [], [], [], []
+for i in range(len(a0v_spec_full)):
+    if hk_range[0] < a0v_wav_full[i] < hk_range[1]:
+        a0v_wav.append(a0v_wav_full[i])
+        a0v_spec.append(a0v_spec_full[i])
+        if i%2==0:
+            a0v_wav_c.append(a0v_wav_full[i])
+            a0v_spec_c.append(a0v_spec_full[i])
+
+plt.plot(a0v_wav_full, a0v_spec_full, label='A0V model')
+for mv in range(0,3):
+    m_file = np.genfromtxt('ukm'+str(mv)+'v.dat', delimiter='  ', dtype=float)
+    m_wav_full, m_spec_full = m_file[:, 0] / 1e4, m_file[:, 1]
+    plt.plot(m_wav_full, m_spec_full, label='M'+str(mv)+'V model')
+for line in hk_range+zj_range:
+    plt.axvline(line, color='k', ls='--')
+plt.legend()
+plt.show()
+
+a0v_spec /= np.nanmedian(a0v_spec)
+hd_a_hk_spec /= np.nanmedian(hd_a_hk_spec)
+hd_a_hk_spec = hd_a_hk_spec[7:] - 0.4
+y_sol = y_sol[7:]
+
+earth_file = np.genfromtxt('mktrans_zm_10_10.dat')
+earth_wav_full, earth_spec_full = earth_file[:,0], earth_file[:,1]
+
+trend = hd_a_hk_spec / a0v_spec_c[:len(hd_a_hk_spec)]
+trend /= np.nanmedian(trend)
+
+plt.plot(y_sol, hd_a_hk_spec, label='HD27267-A-HK', zorder=1)
+plt.plot(a0v_wav, a0v_spec, label='A0V model', zorder=2)
+plt.plot(earth_wav_full, earth_spec_full, label='Earth transmission', alpha=0.4, zorder=0)
+plt.plot(y_sol, trend, label='Trend', alpha=0.6, zorder=1)
+plt.xlim(min(y_sol)-0.1, max(y_sol)+0.1)
+plt.xlabel('Wavelength (microns)')
+plt.ylabel('Normalised flux')
+plt.ylim(0, 3)
+plt.legend()
+plt.minorticks_on()
+plt.ticklabel_format(style='sci', axis='x', scilimits=(0,0))
+plt.show()
+
+# - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+"""
+Objects:
+
+A:HD27267_hk_3.0 - 4                HD HK spectra - A - 3s
+A:HD27267_hk_6.0 - 4                HD HK spectra - A - 6s
+A:HD27267_zj_1.5 - 2                HD zJ spectra - A - 1.5s
+A:HD27267_zj_4.0 - 2                HD zJ spectra - A - 4s
+A:LP358_hk_12.0 - 4                 LP HK spectra - A
+A:LP358_zj_25.0 - 4                 LP zJ spectra - A
+Arc-Ar-Xe_hk_50.0 - 1               HK Argon + Xenon arc
+Arc-Ar-Xe_zj_35.0 - 1               zJ Argon + Xenon arc
+Arc-Ar-short_hk_10.0 - 2            HK Argon arc - 10s
+Arc-Ar-long_hk_80.0 - 1             HK Argon arc - 80s
+Arc-Ar-short_zj_3.5 - 1             zJ Argon arc - 3.5s
+Arc-Ar-long_zj_15.0 - 1             zJ Argon arc - 15s
+Arc-Xe-short_hk_8.0 - 1             HK Xenon arc - 8s
+Arc-Xe-long_hk_80.0 - 1             HK Xenon arc - 80s
+Arc-Xe-short_zj_6.0 - 1             zJ Xenon arc - 6s
+Arc-Xe-long_zj_60.0 - 1             zJ Xenon arc - 60s
+B:HD27267_hk_3.0 - 4                HD HK spectra - B - 3s
+B:HD27267_hk_6.0 - 4                HD HK spectra - B - 6s
+B:HD27267_zj_1.5 - 2                HD zJ spectra - B - 1.5s
+B:HD27267_zj_4.0 - 2                HD zJ spectra - B - 4s
+B:LP358_hk_12.0 - 4                 LP HK spectra - B
+B:LP358_zj_25.0 - 4                 LP zJ spectra - B
+DomeFlat-HK-Bright_hk_2.5 - 20      HK dome flat - bright - 2.5s
+DomeFlat-HK-Bright_hk_2.7 - 1       HK dome flat - bright - 2.7s
+DomeFlat-HK-Bright_hk_3.0 - 21      HK dome flat - bright - 3s
+DomeFlat-HK-Dim_hk_2.5 - 20         HK dome flat - dim - 2.5s
+DomeFlat-HK-Dim_hk_3.0 - 21         HK dome flat - dim - 3s
+DomeFlat-zJ-Bright_zj_4.5 - 21      zJ dome flat
+W-Flat-zJ-Bright_zj_1.5 - 21        zJ tungsten lamp flat
+
+Test / acquire slit ..?
+acq-slit_ar_1.0 - 2
+acq-slit_ar_3.0 - 3
+acq-test_ar_1.0 - 5
+acq-test_ar_3.0 - 5
+"""
+
+
+# argon_file = np.genfromtxt('argon.dat')     # angstroms
+# argon_wav_full, argon_i_full = argon_file[:,0], argon_file[:,1]
+#
+# argon_wav, argon_i = [], []     # microns
+# for i in range(len(argon_wav_full)):
+#     wav, intens = argon_wav_full[i]/1e4, argon_i_full[i]
+#     if hk_range[0] <= wav <= hk_range[1] and intens > 2.0:
+#         argon_wav.append(wav)
+#         argon_i.append(intens)
+# max_arc, max_dat = max(arc_row_ar), max(argon_i)
+# argon_i = np.asarray(argon_i)
+
+# - - - - - - - -
+
+# x_arc_lines = []
+# for i in range(len(arc_row_ar)):
+#     if arc_row_ar[i] > 1e3:
+#         x_arc_lines.append(x_pix[i])
+# print argon_wav, '\n', x_arc_lines
+
+# -------
+
+# from scipy import signal
+# peakind = signal.find_peaks_cwt(arc_row_ar, np.arange(1,5), min_snr=2)
+
+# import peakutils.peak
+# peakind = peakutils.peak.indexes(np.array(arc_row_ar), thres=0.05, min_dist=10)
+
+# arc_row_ar = arc_row_xe
+# max_ar, max_dat_ar = max_xe, max_dat_xe
+# argon_i, argon_wav = xenon_i, xenon_wav
+
+# from scipy import interpolate
+# def running_sigma_clip(data, ax,usig=0.1, lsig=0.1,binsize=100):
+#     #
+#     # Sigma clipping (running): find local outliers
+#     #
+#     data_clipped = []
+#     ax_clipped, err = [], []
+#     upperlist = []
+#     lowerlist = []
+#     i = 0
+#     while i < len(data):
+#         bin_begin = max(0, (i - binsize/2))
+#         bin_end = min(len(data),(i+binsize/2))
+#         the_bin = data[bin_begin:bin_end]
+#
+#         std = np.nanstd(np.sort(the_bin)[1:])
+#         median = np.median(the_bin)
+#         upperbound = (median + (usig*std))
+#         lowerbound = (median - (lsig*std))
+#         upperlist.append(upperbound)
+#         lowerlist.append(lowerbound)
+#         if (data[i] < upperbound) and (data[i] > lowerbound):
+#             data_clipped.append(data[i])
+#             ax_clipped.append(ax[i])
+#         i = i + 1
+#     return data_clipped, ax_clipped
+#
+# import detect_peaks
+#
+# def find_peaks(x, y):
+#     y_clip, x_clip = running_sigma_clip(y, x)
+#     print len(x) - len(x_clip)
+#     spl = interpolate.splrep(x_clip,y_clip,s=2e5)
+#     # plt.plot(x_clip, y_clip, '.')
+#     # plt.plot(x, interpolate.splev(x, spl))
+#     # plt.show()
+#
+#     y_new = y - interpolate.splev(x, spl) + np.median(interpolate.splev(x, spl))
+#     med = np.median(y_new)
+#
+#     if med > 0.0:
+#         thresh = 5.0
+#     else:
+#         thresh = 5.0
+#         med = 10.0
+#
+#     peakind = detect_peaks.detect_peaks(y_new, mph=med*thresh, mpd=5, threshold=thresh)
+#
+#     return peakind, y_new
+#
+#     # plt.plot(x, y_new)
+#     # plt.show()
+#
+# peakind, y_new = find_peaks(x_pix, arc_row_ar)
+#
+# print peakind
