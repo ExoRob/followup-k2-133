@@ -10,6 +10,7 @@ from astropy.io import ascii
 import sys
 from exoplanet import phase_fold
 import pandas
+import my_constants as myc
 
 
 def keplerslaw(kper):
@@ -50,6 +51,10 @@ for j in range(4):
     col = ["d", "c", "b", "01"][j]
     pl_vals = all_vals[j*12:j*12+12]
     df[col] = pl_vals
+
+df.loc[len(df)] = ["Rp"] + list(np.round(rps * 0.46 * myc.RS / myc.RE, 2))
+df.loc[len(df)] = ["a"] + list(np.round(sas, 1))
+
 df.to_csv(run + "/fit_vals.csv", index=False)
 
 
