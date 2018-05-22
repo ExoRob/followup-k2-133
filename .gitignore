@@ -1,0 +1,6 @@
+*.fit
+*.png
+*.fits
+*.pyc
+transit/save*
+spectra

@@ -1,0 +1,325 @@
+"""
+LC MCMC fitting for 4 planets
+
+- change pars to arrays
+
+- fit/update limb darkening?
+- fit_ecc needs w as a free parameter
+"""
+import matplotlib.pyplot as plt
+import numpy as np
+from scipy import stats
+import emcee
+import batman
+import sys
+from exoplanet import phase_fold
+import astropy.io.ascii as ascii
+import scipy.interpolate as interpolate
+import pandas
+import corner
+import dill
+from multiprocessing import Pool
+from astropy.io import fits
+from scipy.ndimage import binary_dilation
+import my_constants as myc
+
+st_r, st_m = 0.46, 0.5
+
+n1, n2 = 2, 3
+
+# set priors and widths
+# prior_t0 = [3.1665, 0.7114, 15.839, 5.5695]
+prior_t0 = np.array([2457821.3168, 2457823.7656, 2457826.1739, 2457837.8659]) - 2454833.0
+width_t0 = [0.01, 0.01, 0.01, 0.01]
+prior_per = [3.0712, 4.8682, 11.0234, 26.5837]
+width_per = [0.001, 0.001, 0.001, 0.01]
+prior_rp = [0.0255, 0.0288, 0.0393, 0.0372]
+width_rp = [0.005, 0.005, 0.005, 0.001]
+prior_i = [86., 86., 88.5, 86.]
+width_i = [4., 4., 1.5, 4.]
+
+pl_chars = ["b", "c", "d", "01"]
+n_pls = len(pl_chars)
+
+fit_ecc = False
+
+
+def calc_b(_a, _i):
+    return _a * np.cos(np.radians(_i))
+
+
+def keplerslaw(kper):
+    """ relate parameters "a" - star-planet distance in stellar radii! and "per" - orbital period """
+    Mstar = st_m * 1.989e30  # kg
+    G = 6.67408e-11  # m3 kg-1 s-2
+    Rstar = st_r * 695700000.  # m
+
+    return ((kper * 86400.) ** 2 / (4 * np.pi ** 2) * G * Mstar) ** (1. / 3.) / Rstar
+
+
+class Planet(object):
+    def __init__(self):
+        # fixed parameters
+        self.limb_dark = "quadratic"    # limb darkening model
+        self.u = [0.5079, 0.2239]       # limb darkening coefficients
+        self.ecc = 0.                   # eccentricity
+        self.w = 90.                    # longitude of periastron (in degrees)
+
+        # free parameters
+        self.rp_d = 0.          # planet radius (in units of stellar radii)
+        self.a_d = 0.           # semi-major axis (in units of stellar radii)
+        self.inc_d = 0.         # orbital inclination (in degrees)
+        self.t0_d = 0.          # time of inferior conjunction
+        self.period_d = 0.      # orbital period
+        self.N_free_parameters = 4 + fit_ecc      # number of free parameters in model
+
+        # start the batman model
+        self.params = batman.TransitParams()
+        self.params.limb_dark = self.limb_dark  # limb darkening model
+        self.params.u = self.u                  # limb darkening coefficients
+
+        # names of the parameters for the corner plot
+        self.labels = [r'$R_p/R_*$', r'$i$', r'$T_0$', r'$P$']
+        # if fit_ecc:
+        #     self.labels += [r'$e$']
+
+    def set_transit_parameters(self, pars):
+        """ set transit parameters from pars """
+        self.rp_d, self.inc_d, self.t0_d, self.period_d = pars[:4]
+        # if fit_ecc:
+        #     self.ecc = pars[-1]
+        self.a_d = keplerslaw(np.asarray(self.period_d))  # set from keplers law and stellar relations
+
+    def get_transit_curve(self, t):
+        """ return the transit curve at times t """
+        light_curve = np.ones(t.size, dtype=float)
+        # set self.params for batman model
+        self.params.rp = self.rp_d
+        self.params.inc = self.inc_d
+        self.params.t0 = self.t0_d
+        self.params.per = self.period_d
+        self.params.a = keplerslaw(self.period_d)  # set from keplers law and stellar relations
+
+        self.params.ecc = self.ecc
+        self.params.w = self.w
+
+        self.batman_model = batman.TransitModel(self.params, t, supersample_factor=15, exp_time=0.5/24.)
+        light_curve += self.batman_model.light_curve(self.params) - 1.
+        
+        return light_curve
+
+    def set_priors(self):
+        """ define each parameter prior distribution """
+        self.prior_rp_d = stats.norm(prior_rp[2], width_rp[2])    # planet/star radius ratio
+        self.prior_inc_d = stats.uniform(prior_i[2], width_i[2])  # orbital inclination (degrees)
+        self.prior_t0_d = stats.norm(prior_t0[2], width_t0[2])    # time of inferior conjunction
+        self.prior_period_d = stats.norm(prior_per[2], width_per[2])  # orbital period (days)
+        # if fit_ecc:
+        #     self.prior_ecc = stats.uniform(e1, e2)  # eccentricity
+
+    def get_from_prior(self, nwalkers):
+        """ return a list with random values from each parameter's prior """
+        self.set_priors()   # use distributions from set_priors
+
+        pfp = [self.prior_rp_d.rvs(nwalkers), self.prior_inc_d.rvs(nwalkers), self.prior_t0_d.rvs(nwalkers),
+               self.prior_period_d.rvs(nwalkers)]
+        # if fit_ecc:
+        #     pfp += [self.prior_ecc.rvs(nwalkers)]
+        pars_from_prior = np.asarray(pfp).T
+
+        # with open("pkl.pkl", "wb") as pkf:
+        #     dill.dump(pars_from_prior, pkf)
+        # sys.exit()
+
+        return pars_from_prior
+
+
+class Data(object):
+    # TODO: Masking
+
+    """ GLOBAL class to hold the light curve """
+    # def __init__(self, lc_file, skip_lc_rows=0):
+    #     self.lc_file = lc_file
+    #
+    #     # read light curve
+    #     self.LCtime, self.LC, self.LCerror = np.loadtxt(lc_file, unpack=True, skiprows=skip_lc_rows)
+    #
+    #     # if epic == '248690431':
+    #     #     mask = []
+    #     #     self.LCtime = np.delete(self.LCtime, mask)
+    #     #     self.LC = np.delete(self.LC, mask)
+    #     #     self.LCerror = np.delete(self.LCerror, mask)
+    #
+    #     self.N_lc = self.LCtime.size
+
+    def __init__(self, lc_file):
+        d = fits.getdata(lc_file, 1)  # load detrended LC
+        m = np.isfinite(d.flux) & np.isfinite(d.time) & (~(d.mflags & 2 ** 3).astype(np.bool))
+        m &= ~binary_dilation((d.quality & 2 ** 20) != 0)
+
+        time = d.time[m]
+        flux = (d.flux[m] - d.trtime[m] + np.nanmedian(d.trtime[m]) - d.trposi[m] + np.nanmedian(d.trposi[m]))
+        mflux = np.nanmedian(flux)
+        flux /= mflux
+        flux_e = d.error[m] / mflux
+        # x = d.x[m]
+        # y = d.y[m]
+
+        # f_t = (d.flux[m] - d.trposi[m] + np.nanmedian(d.trposi[m])) / mflux  # flux corrected for position only
+        # f_p = (d.flux[m] - d.trtime[m] + np.nanmedian(d.trtime[m])) / mflux  # flux corrected for time only
+        # m_t = (d.trtime[m]) / np.nanmedian(d.trtime[m])  # model for time
+        # m_p = (d.trposi[m]) / np.nanmedian(d.trposi[m])  # model for position
+
+        self.LCtime = time
+        self.LC = flux
+        self.LCerror = flux_e
+        self.N_lc = self.LCtime.size
+
+        # plt.plot(self.LCtime, self.LC, ".")
+        # plt.show()
+
+
+def lnlike(pars, planet):
+    """ log likelihood function """
+    log2pi = np.log(2.0*np.pi)
+
+    # set the transit params
+    planet.set_transit_parameters(pars)
+
+    # calculate the lnlike for transit
+    transit_model = planet.get_transit_curve(data.LCtime)
+    sigma = data.LCerror**2
+    chi = np.log(sigma)/2. + (data.LC - transit_model)**2 / (2.*sigma)
+    
+    log_like_transit = - 0.5*data.N_lc*log2pi - np.sum(chi)
+    
+    # if you want, try to calculate lnlike using one of the scipy distributions
+    # log_like_transit2 = stats.norm(loc=transit_model, scale=sigma).logpdf(data.LC).sum()
+
+    # the total log likelihood (neglect jitter)
+    log_like = log_like_transit
+
+    if not np.isfinite(log_like) or pars[0] < 0.0:
+        return -np.inf
+    else:
+        return log_like
+
+
+def lnprior(pars, planet):
+    """ calculate the log prior for a set of parameters """
+    # transit parameters
+    prior_rp_d = planet.prior_rp_d.logpdf(pars[0])
+    prior_inc_d = planet.prior_inc_d.logpdf(pars[1])
+    prior_t0_d = planet.prior_t0_d.logpdf(pars[2])
+    prior_period_d = planet.prior_period_d.logpdf(pars[3])
+
+    ln_prior_d = prior_rp_d + prior_inc_d + prior_t0_d + prior_period_d
+
+    # if fit_ecc:
+    #     prior_ecc = planet.prior_ecc.logpdf(pars[-1])
+    #     ln_prior += prior_ecc
+
+    return ln_prior_d
+
+
+def lnprob(pars, planet):
+    """ posterior distribution """
+    log_prior = lnprior(pars, planet)
+    log_like = lnlike(pars, planet)
+    log_posterior = log_prior + log_like
+
+    # print list(pars), log_prior, log_like
+
+    return log_posterior
+
+
+# initialize the Planet and Data classes
+planet = Planet()
+data = Data("EPIC_247887989_mast.fits")
+
+# parameters for emcee
+# ndim, nwalkers, nsteps, burnin = planet.N_free_parameters, 15, 150, 60       # testing
+ndim, nwalkers, nsteps, burnin = planet.N_free_parameters, 30, 800, 400      # basic
+# ndim, nwalkers, nsteps, burnin = planet.N_free_parameters, 50, 3000, 1500    # fitting
+# ndim, nwalkers, nsteps, burnin = planet.N_free_parameters, 200, 800, 500     # long
+
+# get random starting positions from the priors
+pos = planet.get_from_prior(nwalkers)
+# print "Priors between", [(min(pri), max(pri)) for pri in np.asarray(pos).T]
+
+# sample the posterior
+sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(planet,))
+out = sampler.run_mcmc(pos, nsteps, progress=True)
+
+# pool = Pool()   # use 4 cores for ~2 times speed
+# sampler = emcee.EnsembleSampler(nwalkers, ndim, lnprob, args=(planet,), pool=pool)
+# out = sampler.run_mcmc(pos, nsteps, progress=True)
+
+# remove some of the initial steps (burn-in)
+samples = sampler.chain[:, burnin:, :].reshape((-1, ndim))
+
+# make a corner plot of the MCMC samples
+corner.corner(samples, labels=planet.labels)
+plt.savefig("samples.pdf", format="pdf")
+plt.show()
+
+# get the medians of the posterior distributions
+median_pars = np.median(samples, axis=0)
+
+print(['%9s' % s.replace('$', '').replace('_', '').replace('\\rm', '').replace('\\', '') for s in planet.labels])
+print(['%9.4f' % s for s in median_pars])
+pcs = map(lambda v: (v[1], v[2]-v[1], v[1]-v[0]), zip(*np.percentile(samples, [5, 50, 95], axis=0)))
+print(pcs)
+
+planet.set_transit_parameters(median_pars)
+
+a = keplerslaw(planet.period_d)
+b = calc_b(a, planet.inc_d)
+rp = planet.rp_d * st_r * myc.RS / myc.RE
+
+pl = "d"
+print("\nPlanet: %s\nb = %.2f\nRp = %.2f RE" % (pl, b, rp))
+print("a = %.2f sr" % keplerslaw(planet.period_d))
+
+t = np.linspace(data.LCtime.min(), data.LCtime.max(), data.LCtime.size*100)
+lc = planet.get_transit_curve(t)
+
+fig, (ax1, ax2, ax3) = plt.subplots(nrows=3, ncols=1, figsize=(10, 8), gridspec_kw={'height_ratios': [3, 3, 1]})
+ax1.plot(data.LCtime, data.LC, 'o', ms=3, alpha=0.7, zorder=1)
+ax1.plot(t, lc, lw=2, alpha=0.8, zorder=2)
+ax1.set_xlim([min(data.LCtime), max(data.LCtime)])
+
+phase, lcfold = phase_fold(data.LCtime, data.LC, planet.period_d, planet.t0_d)
+ax2.plot(phase, lcfold, 'o', ms=3, alpha=0.7, zorder=1)
+
+mphase, mfold = phase_fold(t, lc, planet.period_d, planet.t0_d)
+ax2.plot(mphase, mfold, lw=2, alpha=0.8, zorder=2)
+# ax2.set_xlim([0.4, 0.6])
+ax2.set_xlim([0.3, 0.7])
+ax2.tick_params(axis='x', labelbottom=False)
+
+_, mfold_lct = phase_fold(data.LCtime, planet.get_transit_curve(data.LCtime), planet.period_d, planet.t0_d)
+resid = np.asarray(lcfold) - np.asarray(mfold_lct)
+ax3.plot(phase, resid, 'o', alpha=0.7, ms=3, zorder=1)
+ax3.axhline(0., color='k', alpha=0.7, lw=2, zorder=2)
+ax3.set_xlim([0.3, 0.7])
+ax3.set_ylim([-np.std(resid)*10., np.std(resid)*10.])
+
+ax2.get_shared_x_axes().join(ax2, ax3)
+plt.tight_layout()
+plt.savefig("fit.pdf", format="pdf")
+plt.show()
+
+# mcmc_cols = ["mcmc_rp", "mcmc_inc", "mcmc_t0", "mcmc_period"]
+# # if fit_ecc:
+# #     mcmc_cols += ["mcmc_ecc"]
+# for i in range(planet.N_free_parameters):
+#     col = mcmc_cols[i]
+#     pf.iloc[rowid][col] = "%.4f|%.4f|%.4f" % pcs[i]
+# pf.iloc[rowid]["mcmc_rj"] = round(rp, 2)
+# pf.iloc[rowid]["mcmc_rs"] = round(rs, 2)
+# pf.iloc[rowid]["mcmc_b"] = round(b, 2)
+# pf.to_csv("../mons_fitting.csv", index=False)
+
+with open("mcmc.pkl", "wb") as pklf:
+    dill.dump([data, planet, samples], pklf)
