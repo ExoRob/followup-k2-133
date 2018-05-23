@@ -338,7 +338,7 @@ def lnprob(pars, planet):
 # initialize the Planet and Data classes
 planet = Planet()
 
-method = ["K2SC", "K2SFF"][0]
+method = ["K2SC", "K2SFF", "K2SC_mask"][2]
 data = Data("LC_{}.dat".format(method))
 
 # parameters for emcee

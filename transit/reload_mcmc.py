@@ -23,8 +23,9 @@ def keplerslaw(kper):
     return ((kper * 86400.) ** 2 / (4 * np.pi ** 2) * G * Mstar) ** (1. / 3.) / Rstar
 
 
-# run = "save_K2SC_16_250_2000_1000"
-run = "save_K2SFF_16_250_2000_1000"
+run = "save_K2SC_mask_16_250_2000_1000"; lc_file = "LC_K2SC_mask.dat"
+# run = "save_K2SC_16_250_2000_1000"; lc_file = "LC_K2SC"
+# run = "save_K2SFF_16_250_2000_1000"; lc_file = "LC_K2SFF"
 pklfile = run + "/mcmc.pkl"
 with open(pklfile, "rb") as pklf:
     data, planet, samples = dill.load(pklf)
@@ -59,7 +60,6 @@ df.to_csv(run + "/fit_vals.csv", index=False)
 
 
 # data
-lc_file = "LC_{}.dat".format(run.split("_")[1])
 t, f, e = np.loadtxt(lc_file, unpack=True, delimiter=",")
 # t, f, e = data.LCtime, data.LC, data.LCerror
 
@@ -95,6 +95,9 @@ for i in range(4):
 models = np.asarray(models)
 m_tot = np.sum(models, axis=0) - 3.     # total transit model for system
 
+# with open("bat_pars.pkl", "wb") as pf:
+#     dill.dump(pars, pf)
+# sys.exit()
 
 for i in range(4):
     pl = ["b", "c", "d", "01"][i]
@@ -153,8 +156,8 @@ for i in range(4):
 
 # diff = f - m_tot    # residuals
 #
-# devp = 3*np.std(diff)       # std above
-# devm = -3*np.std(diff)      # std below
+# devp = 4*np.std(diff)       # std above
+# devm = -2.8*np.std(diff)      # std below
 # msk = (diff <= devp) & (diff >= devm)   # good points
 # msk2 = np.argwhere((diff > devp) | (diff < devm))[:,0]  # indices of bad points
 #
