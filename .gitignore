@@ -3,3 +3,5 @@
 *.fits
 *.pyc
 *.zip
+*.gz
+.idea

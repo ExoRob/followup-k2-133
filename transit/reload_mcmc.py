@@ -15,7 +15,7 @@ import my_constants as myc
 
 def keplerslaw(kper):
     """ relate parameters "a" - star-planet distance in stellar radii! and "per" - orbital period """
-    st_r, st_m = 0.46, 0.50
+    st_r, st_m = 0.456, 0.497
     Mstar = st_m * 1.989e30  # kg
     G = 6.67408e-11  # m3 kg-1 s-2
     Rstar = st_r * 695700000.  # m
@@ -23,9 +23,9 @@ def keplerslaw(kper):
     return ((kper * 86400.) ** 2 / (4 * np.pi ** 2) * G * Mstar) ** (1. / 3.) / Rstar
 
 
-run = "save_K2SC_mask_16_250_2000_1000"; lc_file = "LC_K2SC_mask.dat"
-# run = "save_K2SC_16_250_2000_1000"; lc_file = "LC_K2SC"
-# run = "save_K2SFF_16_250_2000_1000"; lc_file = "LC_K2SFF"
+# run = "save_K2SC_mask_16_300_2000_1000"; lc_file = "LC_K2SC_mask.dat"
+# run = "save_K2SC_16_250_2000_1000"; lc_file = "LC_K2SC.dat"
+run = "save_K2SFF_16_300_2000_1000"; lc_file = "LC_K2SFF.dat"
 pklfile = run + "/mcmc.pkl"
 with open(pklfile, "rb") as pklf:
     data, planet, samples = dill.load(pklf)

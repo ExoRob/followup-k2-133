@@ -24,7 +24,7 @@ import dill
 import my_constants as myc
 import os
 
-st_r, st_m = 0.46, 0.50
+st_r, st_m = 0.456, 0.497
 
 pl_use = [True, True, True, True]     # only run for these planets - limited to d,c,b,01 for now
 
@@ -338,13 +338,13 @@ def lnprob(pars, planet):
 # initialize the Planet and Data classes
 planet = Planet()
 
-method = ["K2SC", "K2SFF", "K2SC_mask"][2]
+method = ["K2SC", "K2SFF", "K2SC_mask"][1]
 data = Data("LC_{}.dat".format(method))
 
 # parameters for emcee
 # ndim, nwalkers, nsteps, burnin = planet.N_free_parameters, planet.N_free_parameters*3, 100, 40      # testing
 # ndim, nwalkers, nsteps, burnin = planet.N_free_parameters, 60, 300, 100      # basic
-ndim, nwalkers, nsteps, burnin = planet.N_free_parameters, 250, 2000, 1000    # fitting
+ndim, nwalkers, nsteps, burnin = planet.N_free_parameters, 300, 2000, 1000    # fitting
 
 out_dir = "save_{}_{}_{}_{}_{}/".format(method, ndim, nwalkers, nsteps, burnin)
 if not os.path.isdir(out_dir):
