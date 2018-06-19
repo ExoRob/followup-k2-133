@@ -11,9 +11,9 @@ err = np.ones(t.size, dtype=float)*np.std(f)
 
 nb = 40          # number of bootstrap resamples
 ncores = 4      # number of concurrent processes (number of available cores)
-first_run = False
+first_run = True
 
-per_range = (15., 45.)  # BLS period range
+per_range = (20., 45.)  # BLS period range
 q_range = (0.002, 0.1)  # BLS q range
 nf = 10000              # BLS frequency bins
 nbin = t.size           # BLS phase bins

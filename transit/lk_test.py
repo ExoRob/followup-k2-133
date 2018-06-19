@@ -11,7 +11,7 @@ from scipy import interpolate
 from scipy.signal import medfilt
 from astropy.io import fits
 from astropy.stats import sigma_clip
-from pybls import BLS
+# from pybls import BLS
 
 import seaborn as sns
 sns.set()
@@ -212,6 +212,15 @@ for i in range(4):
 models = np.asarray(models)
 m_tot = np.sum(models[:3], axis=0) - 2.     # total transit model for system
 
+# with open("pars.pkl", "wb") as pf:
+#     dill.dump(pars, pf)
+# m_all = np.sum(models, axis=0) - 3.
+# all_transit_mask = m_all == 1.
+# np.savetxt("all_transit_mask.dat", np.array([t, all_transit_mask]).T)
+# plt.plot(t[all_transit_mask], f[all_transit_mask], ".")
+# plt.plot(t[all_transit_mask==0], f[all_transit_mask==0], ".")
+# plt.show()
+
 f01 = f - m_tot + 1.
 
 res = f01 - models[3]   # residuals
@@ -251,6 +260,7 @@ print "Std =", int(std * 1e6), "ppm."
 # print cdpp / std
 print "Transit SNR = {:.2f}".format(depth / std)
 
+depths = []
 
 fig, axes = plt.subplots(1, 3, figsize=(18, 5), sharey=True)
 for i in range(3):
@@ -258,6 +268,10 @@ for i in range(3):
     foldt = ((t[i1:i2] - t0s[3] + pers[3]/2.) / pers[3]) % 1
     foldf = f01[i1:i2]
     foldt, foldf = zip(*sorted(zip(foldt, foldf)))
+    foldt, foldf = np.asarray(foldt), np.asarray(foldf)
+
+    dep = 1. - np.min(foldf[(foldt > 0.495) & (foldt < 0.505)])
+    depths.append(dep)
 
     axes[i].errorbar(foldt, foldf, std, lw=0.8, marker=".", ms=10, elinewidth=1.5)    # capsize=4, capthick=1.5)
     for j in [-1., 0., 1.]:
@@ -267,6 +281,7 @@ for i in range(3):
     axes[i].plot(np.asarray(pm01), fm01, lw=5, alpha=0.4)
     axes[i].set_xlim(0.49, 0.51)
     axes[i].set_ylim(1.-8.*std, 1.+6*std)
+print "MES = {:.2f}".format(np.sum(depths/std)/np.sqrt(3.))
 plt.show()
 
 plt.figure(figsize=(15, 4))

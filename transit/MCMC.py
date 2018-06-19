@@ -35,8 +35,8 @@ prior_per = [3.0712, 4.8682, 11.0234, 26.5837]
 width_per = [0.001, 0.001, 0.001, 0.01]
 prior_rp = [0.0255, 0.0288, 0.0393, 0.0372]
 width_rp = [0.005, 0.005, 0.005, 0.001]
-prior_i = [86., 87., 88., 88.5]
-width_i = [4., 3., 2., 1.5]
+prior_i = [86., 87., 88., 89.0]
+width_i = [4., 3., 2., 0.5]
 
 pl_chars = ["b", "c", "d", "01"]
 
@@ -338,13 +338,14 @@ def lnprob(pars, planet):
 # initialize the Planet and Data classes
 planet = Planet()
 
-method = ["K2SC", "K2SFF", "K2SC_mask"][1]
+method = ["K2SC", "K2SFF", "K2SC_mask", "LKSFF"][3]
 data = Data("LC_{}.dat".format(method))
 
 # parameters for emcee
 # ndim, nwalkers, nsteps, burnin = planet.N_free_parameters, planet.N_free_parameters*3, 100, 40      # testing
 # ndim, nwalkers, nsteps, burnin = planet.N_free_parameters, 60, 300, 100      # basic
-ndim, nwalkers, nsteps, burnin = planet.N_free_parameters, 300, 2000, 1000    # fitting
+# ndim, nwalkers, nsteps, burnin = planet.N_free_parameters, 150, 1600, 800    # fitting
+ndim, nwalkers, nsteps, burnin = planet.N_free_parameters, 300, 2000, 1000   # fitting
 
 out_dir = "save_{}_{}_{}_{}_{}/".format(method, ndim, nwalkers, nsteps, burnin)
 if not os.path.isdir(out_dir):

@@ -23,9 +23,10 @@ def keplerslaw(kper):
     return ((kper * 86400.) ** 2 / (4 * np.pi ** 2) * G * Mstar) ** (1. / 3.) / Rstar
 
 
-# run = "save_K2SC_mask_16_300_2000_1000"; lc_file = "LC_K2SC_mask.dat"
+run = "save_K2SC_mask_16_300_2000_1000"; lc_file = "LC_K2SC_mask.dat"
 # run = "save_K2SC_16_250_2000_1000"; lc_file = "LC_K2SC.dat"
-run = "save_K2SFF_16_300_2000_1000"; lc_file = "LC_K2SFF.dat"
+# run = "save_K2SFF_16_300_2000_1000"; lc_file = "LC_K2SFF.dat"
+# run = "save_LKSFF_16_300_2000_1000"; lc_file = "LC_LKSFF.dat"
 pklfile = run + "/mcmc.pkl"
 with open(pklfile, "rb") as pklf:
     data, planet, samples = dill.load(pklf)
@@ -53,7 +54,7 @@ for j in range(4):
     pl_vals = all_vals[j*12:j*12+12]
     df[col] = pl_vals
 
-df.loc[len(df)] = ["Rp"] + list(np.round(rps * 0.46 * myc.RS / myc.RE, 2))
+df.loc[len(df)] = ["Rp"] + list(np.round(rps * 0.456 * myc.RS / myc.RE, 2))
 df.loc[len(df)] = ["a"] + list(np.round(sas, 1))
 
 df.to_csv(run + "/fit_vals.csv", index=False)
@@ -156,8 +157,8 @@ for i in range(4):
 
 # diff = f - m_tot    # residuals
 #
-# devp = 4*np.std(diff)       # std above
-# devm = -2.8*np.std(diff)      # std below
+# devp = 4.*np.std(diff)       # std above
+# devm = -4.*np.std(diff)      # std below
 # msk = (diff <= devp) & (diff >= devm)   # good points
 # msk2 = np.argwhere((diff > devp) | (diff < devm))[:,0]  # indices of bad points
 #
