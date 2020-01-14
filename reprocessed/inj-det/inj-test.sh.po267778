@@ -1,0 +1,19 @@
+=======================================================
+SGE job submitted on Tue Nov 20 12:51:29 GMT 2018
+JOB ID: 267778
+JOB NAME: inj-test.sh
+PE: smp-verbose
+QUEUE: byslot.q
+MASTER node022.prv.kelvin.compute.estate
+=======================================================
+
+** A machine file has been written to /tmp/sge.machines.267778 on node022.prv.kelvin.compute.estate **
+
+=======================================================
+If an output file was specified on job submission
+Job Output Follows:
+=======================================================
+
+==================================================
+SGE job completed on Fri Nov 23 01:40:59 GMT 2018
+==================================================

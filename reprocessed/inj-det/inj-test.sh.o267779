@@ -1,0 +1,6 @@
+injection-test.py:214: RuntimeWarning: invalid value encountered in greater
+  mask &= t > 2988.5
+injection-test.py:215: RuntimeWarning: invalid value encountered in less
+  mask &= t < 3064.7
+> Running on Kelvin ...
+Running injection tests:   0%|          | 0/8000 [00:00<?, ?it/s]
