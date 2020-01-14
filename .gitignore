@@ -1,8 +1,10 @@
-*.fit
-*.png
-*.fits
-*.pyc
-*.zip
-*.gz
 .idea
-spectra/pipeline-new/*
+**/.DS_Store
+
+*.pyc
+
+liris/lirisdr
+reprocessed/env
+liris-spectra
+spectra
+vespa/batman
