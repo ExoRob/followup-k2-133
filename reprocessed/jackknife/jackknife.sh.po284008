@@ -1,0 +1,16 @@
+=======================================================
+SGE job submitted on Thu Dec 6 14:02:53 GMT 2018
+JOB ID: 284008
+JOB NAME: jackknife.sh
+PE: smp-verbose
+QUEUE: byslot.q
+MASTER node020.prv.kelvin.compute.estate
+=======================================================
+
+** A machine file has been written to /tmp/sge.machines.284008 on node020.prv.kelvin.compute.estate **
+
+=======================================================
+If an output file was specified on job submission
+Job Output Follows:
+=======================================================
+
