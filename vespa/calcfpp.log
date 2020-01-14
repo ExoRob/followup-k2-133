@@ -1,0 +1,84 @@
+2019-04-30 12:54:26,070: Cadence not provided in fpp.ini; defaulting to Kepler cadence.
+2019-04-30 12:54:26,071: If this is not a Kepler target, please set cadence (in days).
+2019-04-30 12:54:26,071: Transit band not provided in fpp.ini; defaulting to "Kepler."
+2019-04-30 12:54:26,071: If this is not a Kepler target, please specify filter.
+2019-04-30 12:54:26,221: Loading transit signal from ./trsig.pkl...
+2019-04-30 12:54:26,229: Generating ['beb', 'heb', 'eb', 'beb_Px2', 'heb_Px2', 'eb_Px2', 'pl'] models for PopulationSet...
+2019-04-30 12:55:09,891: 98698 eclipsing HEB systems generated (target 100000)
+2019-04-30 12:55:10,116: 100265 eclipsing HEB systems generated (target 100000)
+2019-04-30 12:55:13,123: Fitting trapezoid models for HEBs...
+2019-04-30 12:59:16,022: Done.
+2019-04-30 12:59:37,655: 98044 eclipsing HEB systems generated (target 100000)
+2019-04-30 12:59:37,914: 100402 eclipsing HEB systems generated (target 100000)
+2019-04-30 12:59:40,524: Fitting trapezoid models for HEBs (Double Period)...
+2019-04-30 13:01:24,449: No eclipse registered for star 47093
+2019-04-30 13:03:20,814: Done.
+2019-04-30 13:03:38,070: 98457 Eclipsing EB systems generated (target 100000)
+2019-04-30 13:03:38,252: 100332 Eclipsing EB systems generated (target 100000)
+2019-04-30 13:03:40,321: Fitting trapezoid models for EBs...
+2019-04-30 13:07:21,727: Done.
+2019-04-30 13:07:38,697: 97691 Eclipsing EB systems generated (target 100000)
+2019-04-30 13:07:38,897: 100513 Eclipsing EB systems generated (target 100000)
+2019-04-30 13:07:41,170: Fitting trapezoid models for EBs (Double Period)...
+2019-04-30 13:10:27,613: No eclipse registered for star 71905
+2019-04-30 13:11:36,428: Done.
+2019-04-30 13:11:36,945: Loading TRILEGAL simulation from ./starfield.h5
+2019-04-30 13:11:51,719: 0 M1s are nan
+2019-04-30 13:11:51,720: 0 M2s are nan
+2019-04-30 13:11:51,720: 2706 R1s are nan
+2019-04-30 13:11:51,721: 445 R2s are nan
+2019-04-30 13:11:52,438: 22166 BEB systems generated (target 100000)
+2019-04-30 13:11:52,864: 0 M1s are nan
+2019-04-30 13:11:52,865: 0 M2s are nan
+2019-04-30 13:11:52,866: 11610 R1s are nan
+2019-04-30 13:11:52,867: 1972 R2s are nan
+2019-04-30 13:11:54,613: 74074 BEB systems generated (target 100000)
+2019-04-30 13:11:54,882: 0 M1s are nan
+2019-04-30 13:11:54,882: 0 M2s are nan
+2019-04-30 13:11:54,883: 7169 R1s are nan
+2019-04-30 13:11:54,883: 1192 R2s are nan
+2019-04-30 13:11:55,982: 105311 BEB systems generated (target 100000)
+2019-04-30 13:11:56,544: Fitting trapezoid models for BEBs...
+2019-04-30 13:15:43,072: Done.
+2019-04-30 13:15:43,530: Loading TRILEGAL simulation from ./starfield.h5
+2019-04-30 13:15:56,275: 0 M1s are nan
+2019-04-30 13:15:56,276: 0 M2s are nan
+2019-04-30 13:15:56,276: 2707 R1s are nan
+2019-04-30 13:15:56,277: 512 R2s are nan
+2019-04-30 13:15:56,956: 22463 BEB systems generated (target 100000)
+2019-04-30 13:15:57,422: 0 M1s are nan
+2019-04-30 13:15:57,423: 0 M2s are nan
+2019-04-30 13:15:57,424: 11680 R1s are nan
+2019-04-30 13:15:57,425: 2084 R2s are nan
+2019-04-30 13:15:59,671: 90144 BEB systems generated (target 100000)
+2019-04-30 13:15:59,738: 0 M1s are nan
+2019-04-30 13:15:59,738: 0 M2s are nan
+2019-04-30 13:15:59,738: 2018 R1s are nan
+2019-04-30 13:15:59,738: 384 R2s are nan
+2019-04-30 13:16:00,273: 101944 BEB systems generated (target 100000)
+2019-04-30 13:16:00,808: Fitting trapezoid models for BEBs (Double Period)...
+2019-04-30 13:19:56,107: Done.
+2019-04-30 13:20:02,363: 79513 Transiting planet systems generated (target 100000)
+2019-04-30 13:20:03,928: 100475 Transiting planet systems generated (target 100000)
+2019-04-30 13:20:04,254: Fitting trapezoid models for Planets...
+2019-04-30 13:23:43,465: Done.
+2019-04-30 13:23:56,750: Empty population (BEBs (Double Period)): < 4 valid systems! Cannot calculate lhood.
+2019-04-30 13:23:56,751: Keck K-band cc not applied to Planets model
+2019-04-30 13:29:32,881: total adds up to: 1.00 (EBs (Double Period))
+2019-04-30 13:31:10,002: Re-fitting trapezoid MCMC model...
+2019-04-30 13:31:13,765: Empty population (BEBs (Double Period)): < 4 valid systems! Cannot calculate lhood.
+2019-04-30 13:33:46,971: Empty population (BEBs (Double Period)): < 4 valid systems! Cannot calculate lhood.
+2019-04-30 13:36:09,436: Empty population (BEBs (Double Period)): < 4 valid systems! Cannot calculate lhood.
+2019-04-30 13:38:29,569: Empty population (BEBs): < 4 valid systems! Cannot calculate lhood.
+2019-04-30 13:38:29,850: Empty population (BEBs (Double Period)): < 4 valid systems! Cannot calculate lhood.
+2019-04-30 13:40:57,838: Empty population (BEBs (Double Period)): < 4 valid systems! Cannot calculate lhood.
+2019-04-30 13:43:26,396: Empty population (BEBs): < 4 valid systems! Cannot calculate lhood.
+2019-04-30 13:43:26,780: Empty population (BEBs (Double Period)): < 4 valid systems! Cannot calculate lhood.
+2019-04-30 13:45:51,415: Empty population (BEBs (Double Period)): < 4 valid systems! Cannot calculate lhood.
+2019-04-30 13:48:15,684: Empty population (BEBs): < 4 valid systems! Cannot calculate lhood.
+2019-04-30 13:48:16,137: Empty population (BEBs (Double Period)): < 4 valid systems! Cannot calculate lhood.
+2019-04-30 13:50:35,678: Empty population (BEBs (Double Period)): < 4 valid systems! Cannot calculate lhood.
+2019-04-30 13:53:01,819: Empty population (BEBs): < 4 valid systems! Cannot calculate lhood.
+2019-04-30 13:53:02,297: Empty population (BEBs (Double Period)): < 4 valid systems! Cannot calculate lhood.
+2019-04-30 13:55:25,716: Bootstrap results (10) written to /Users/rwells/Desktop/followup-k2-133/vespa/results_bootstrap.txt.
+2019-04-30 13:55:25,716: FPP calculation successful. Results/plots written to /Users/rwells/Desktop/followup-k2-133/vespa.

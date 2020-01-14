@@ -1,0 +1,183 @@
+#!/usr/bin/env python
+"""
+This script runs an FPP calculation for a provided
+transit signal.
+
+All parameters are defined in the ``.ini`` files,
+which are by default assumed to be
+in the current path (or in the folder defined as the
+argument to this script).
+
+The ``fpp.ini`` file should be of the following form::
+
+    name = k2oi #anything
+    ra = 11:30:14.510 #can be decimal form too
+    dec = +07:35:18.21
+
+    period = 32.988 #days
+    rprs = 0.0534   #Rp/Rstar
+    photfile = lc_k2oi.csv #contains transit photometry
+
+    #provide Teff, feh, [logg optional] if spectrum available
+    #Teff = 3503, 80  #value, uncertainty
+    #feh = 0.09, 0.09
+    #logg = 4.89, 0.1
+
+and ``star.ini`` should look something like this::
+
+    #observed magnitudes of target star
+    # If uncertainty provided, will be used to fit StarModel
+    [mags]
+    J = 9.763, 0.03
+    H = 9.135, 0.03
+    K = 8.899, 0.02
+    Kepler = 12.473
+
+Running this script will create the following files,
+in the same directory as the ``.ini`` file:
+
+  * ``trsig.pkl``: the pickled :class:`vespa.TransitSignal` object.
+  * ``starfield.h5``: the TRILEGAL field star simulation
+  * ``starmodel.h5``: the :class:`isochrones.StarModel` fit
+  * ``starmodel_corner_physical.png,
+     starmodel_corner_observed.png``:
+     :class:`isochrones.StarModel` corner plots.
+  * ``popset.h5``: the :class:`vespa.PopulationSet` object
+    representing the model population simulations.
+  * ``eb.png, heb.png, beb.png, pl.png``: likelihood plots
+    for each model.
+  * ``trsig.png``: plot of the transit signal
+  * ``FPPsummary.png``: FPP summary plot.
+  * ``calcfpp.log``: logfile of calculation.
+
+This script is not yet set up to incorporate observational constraints,
+but this will be easily doable in the near future.
+
+"""
+from __future__ import print_function, division
+
+import matplotlib
+matplotlib.use('Agg')
+
+import sys, os, re, time, os.path, glob
+import argparse
+import logging
+
+from vespa import FPPCalculation
+from vespa.populations import BoxyModel, LongModel
+from isochrones import StarModel, BinaryStarModel, TripleStarModel
+
+import warnings, astropy
+warnings.simplefilter("error")
+warnings.simplefilter("ignore", DeprecationWarning)
+warnings.simplefilter("ignore", RuntimeWarning)
+warnings.simplefilter("ignore", UserWarning)
+warnings.simplefilter("ignore", FutureWarning)
+warnings.simplefilter("ignore", astropy.utils.exceptions.AstropyDeprecationWarning)
+
+import logging
+
+#utility function to initialize logging
+def initLogging(filename, logger):
+    if logger == None:
+        logger = logging.getLogger()
+    else:  # wish there was a logger.close()
+        for handler in logger.handlers[:]:  # make a copy of the list
+            logger.removeHandler(handler)
+
+    logger.setLevel(logging.INFO)
+    formatter = logging.Formatter(fmt='%(asctime)s: %(message)s')
+
+    fh = logging.FileHandler(filename)
+    fh.setFormatter(formatter)
+    logger.addHandler(fh)
+
+    sh = logging.StreamHandler(sys.stdout)
+    logger.addHandler(sh)
+    return logger
+
+if __name__=='__main__':
+    parser = argparse.ArgumentParser(description='Calculate FPP for a transit signal')
+
+    parser.add_argument('folders', nargs='*', default=['.'])
+    parser.add_argument('-i','--inifile', type=str, default='fpp.ini')
+    parser.add_argument('-n','--n', type=int, default=20000)
+    parser.add_argument('--recalc', action='store_true')
+    parser.add_argument('--debug', action='store_true')
+    parser.add_argument('--newlog', action='store_true')
+    parser.add_argument('--recalc_lhood', action='store_true')
+    parser.add_argument('--refit_trap', action='store_true')
+    parser.add_argument('--refit_trsig', action='store_true')
+    parser.add_argument('--bootstrap', type=int, default=0)
+    parser.add_argument('--include_artificial', action='store_true')
+    parser.add_argument('--artificial_prior', type=float, default=10./200000)
+    parser.add_argument('--ichrone', default='mist', type=str)
+
+
+    args = parser.parse_args()
+
+    logger = None #dummy
+
+    for folder in args.folders:
+        #initialize logger for this folder:
+
+        logfile = os.path.join(folder, 'calcfpp.log')
+        if args.newlog:
+            os.remove(logfile)
+        logger = initLogging(logfile, logger)
+        if args.debug:
+            logger.setLevel(logging.DEBUG)
+
+        try:
+
+            f = FPPCalculation.from_ini(folder, ini_file=args.inifile,
+                                        recalc=args.recalc,
+                                        refit_trap=args.refit_trap,
+                                        ichrone=args.ichrone,
+                                        n=args.n)
+
+            if args.refit_trsig:
+                f.trsig.MCMC(refit=True)
+                f.trsig.save(os.path.join(folder,'trsig.pkl'))
+
+            trap_corner_file = os.path.join(folder, 'trap_corner.png')
+            if not os.path.exists(trap_corner_file) or args.refit_trsig:
+                f.trsig.corner(outfile=trap_corner_file)
+
+            if args.include_artificial:
+                boxmodel = BoxyModel(args.artificial_prior, f['pl'].stars.slope.max())
+                longmodel = LongModel(args.artificial_prior, f['pl'].stars.duration.quantile(0.99))
+                f.add_population(boxmodel)
+                f.add_population(longmodel)
+
+            f.FPPplots(recalc_lhood=args.recalc_lhood)
+            if args.bootstrap > 0:
+                logger.info('Re-fitting trapezoid MCMC model...')
+                f.bootstrap_FPP(args.bootstrap)
+
+            for mult,Model in zip(['single','binary','triple'],
+                                  [StarModel, BinaryStarModel, TripleStarModel]):
+                starmodel_file = os.path.join(folder, '{}_starmodel_{}.h5'.format(args.ichrone, mult))
+                corner_file1 = os.path.join(folder,
+                                              '{}_corner_{}_physical.png'.format(args.ichrone, mult))
+                corner_file2 = os.path.join(folder,
+                                              '{}_corner_{}_observed.png'.format(args.ichrone, mult))
+                if not os.path.exists(corner_file1) or not os.path.exists(corner_file2):
+                    logger.info('Making StarModel corner plots...')
+                    starmodel = Model.load_hdf(starmodel_file)
+                    corner_base = os.path.join(folder,
+                                                 '{}_corner_{}'.format(args.ichrone, mult))
+                    starmodel.corner_plots(corner_base)
+
+            if args.bootstrap > 0:
+                logger.info('Bootstrap results ({}) written to {}.'.format(args.bootstrap,
+                                                                          os.path.join(os.path.abspath(folder),
+                                                                                   'results_bootstrap.txt')))
+            logger.info('FPP calculation successful. ' +
+                        'Results/plots written to {}.'.format(os.path.abspath(folder)))
+
+            print('FPP for {}: {}'.format(f.name,f.FPP()))
+        except KeyboardInterrupt:
+            raise
+        except:
+            logger.error('FPP calculation failed for {}.'.format(folder), exc_info=True)

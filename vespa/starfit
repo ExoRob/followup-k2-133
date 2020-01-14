@@ -1,0 +1,98 @@
+#!/usr/bin/env python
+"""
+A command-line program to fit a StarModel using the isochrones package
+
+Input argument is name of a folder that contains a file
+called ``star.ini``, which is a config file containing all
+the observed properties of the star on which the model should
+be conditioned.  Multiple folder names can also be passed.
+
+"""
+from __future__ import division, print_function
+
+import matplotlib
+matplotlib.use('agg')
+
+import matplotlib.pyplot as plt
+import tables
+
+import os, os.path, re, sys
+import logging
+import time
+
+import argparse
+
+from isochrones.starfit import starfit
+
+has_tgastars = True
+try:
+    from tgastars.starfit import tgas_starfit
+except ImportError:
+    has_tgastars = False
+
+if __name__=='__main__':
+
+    parser = argparse.ArgumentParser(description='Fit physical properties of a star conditioned on observed quantities.')
+
+    parser.add_argument('folders', nargs='*', default=['.'])
+    parser.add_argument('--binary', action='store_true')
+    parser.add_argument('--triple', action='store_true')
+    parser.add_argument('--all', action='store_true')
+    parser.add_argument('--models', default='mist')
+    parser.add_argument('--emcee', action='store_true')
+    parser.add_argument('--no_local_fehprior', action='store_true')
+    parser.add_argument('--plot_only', action='store_true')
+    parser.add_argument('-o','--overwrite', action='store_true')
+    parser.add_argument('-v','--verbose', action='store_true')
+    parser.add_argument('--gaia', action='store_true')
+    parser.add_argument('--write_ini', action='store_true')
+    parser.add_argument('--rootdir', type=str, default=None)
+    parser.add_argument('--bands', nargs='*', default=None, 
+                        help='Additional band(s) to include in samples.')
+
+    args = parser.parse_args()
+
+    if args.gaia and not has_tgastars:
+        print('You must install the tgastars package to run in Gaia mode.')
+        sys.exit()
+
+    try:
+        import pymultinest
+    except ImportError:
+        args.emcee = True
+
+    if args.all:
+        multiplicities = ['single', 'binary', 'triple']
+    elif args.binary:
+        multiplicities = ['binary']
+    elif args.triple:
+        multiplicities = ['triple']
+    else:
+        multiplicities = ['single']
+    
+    nstars = {'single':1,
+              'binary':2,
+              'triple':3}
+
+    starfit_fn = tgas_starfit if args.gaia else starfit
+
+    logger = None #dummy
+    
+    for i,folder in enumerate(args.folders):
+        print('{} of {}: {}'.format(i+1, len(args.folders), folder))
+        kwargs = dict(multiplicities=multiplicities, models=args.models,
+                        use_emcee=args.emcee, plot_only=args.plot_only, overwrite=args.overwrite,
+                        verbose=args.verbose, logger=logger, bands=args.bands)
+        if args.gaia:
+            kwargs['write_ini_file'] = args.write_ini
+            kwargs['rootdir'] = args.rootdir
+
+        mod, logger = starfit_fn(folder, **kwargs)
+
+        # Not using this, so delete.
+        del mod
+
+        # Don't know why this is necessary?  Haven't been able to track down where file gets left open.
+        # But this is necessary to avoid building up of open files.
+        tables.file._open_files.close_all()
+

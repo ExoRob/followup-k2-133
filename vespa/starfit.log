@@ -1,0 +1,22 @@
+2019-04-29 14:08:02,761: Kepler=13.33 ignored.
+2019-04-29 14:08:17,567: /Users/rwells/.isochrones/mist/MIST_v1.1_vvcrit0.0_UBVRIplus.h5 written.
+2019-04-29 14:08:28,609: /Users/rwells/.isochrones/mist/MIST_v1.1_vvcrit0.0_SDSS.h5 written.
+2019-04-29 14:10:21,923: single starfit successful for . in 2.3 minutes.
+2019-04-29 14:10:21,933: Kepler=13.33 ignored.
+2019-04-29 14:16:01,510: binary starfit successful for . in 5.7 minutes.
+2019-04-29 14:16:01,514: Kepler=13.33 ignored.
+2019-04-29 14:26:05,149: triple starfit successful for . in 10.1 minutes.
+2019-04-29 14:46:42,724: Kepler=13.33 ignored.
+2019-04-29 14:46:59,035: /Users/rwells/.isochrones/mist/MIST_v1.1_vvcrit0.0_UBVRIplus.h5 written.
+2019-04-29 14:47:10,262: /Users/rwells/.isochrones/mist/MIST_v1.1_vvcrit0.0_SDSS.h5 written.
+2019-04-29 14:47:17,499: single starfit successful for . in 0.6 minutes.
+2019-04-29 14:47:17,539: Kepler=13.33 ignored.
+2019-04-29 14:47:24,457: binary starfit successful for . in 0.1 minutes.
+2019-04-29 14:47:24,495: Kepler=13.33 ignored.
+2019-04-29 14:47:33,599: triple starfit successful for . in 0.2 minutes.
+2019-04-29 15:56:17,467: mist_starmodel_single.h5 exists.  Use -o to overwrite.
+2019-04-29 15:56:21,351: single starfit successful for . in 0.1 minutes.
+2019-04-29 15:56:21,406: mist_starmodel_binary.h5 exists.  Use -o to overwrite.
+2019-04-29 15:56:26,108: binary starfit successful for . in 0.1 minutes.
+2019-04-29 15:56:26,163: mist_starmodel_triple.h5 exists.  Use -o to overwrite.
+2019-04-29 15:56:32,676: triple starfit successful for . in 0.1 minutes.
