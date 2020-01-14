@@ -1,0 +1,9 @@
+> Running on Kelvin ...
+(1000, 4) 4 1000 100000 60000
+Traceback (most recent call last):
+  File "MCMC-single.py", line 248, in <module>
+    out = sampler.run_mcmc(pos, nsteps, progress=True)
+  File "build/bdist.linux-x86_64/egg/emcee/ensemble.py", line 333, in run_mcmc
+  File "build/bdist.linux-x86_64/egg/emcee/ensemble.py", line 273, in sample
+  File "build/bdist.linux-x86_64/egg/emcee/backends/backend.py", line 171, in grow
+MemoryError

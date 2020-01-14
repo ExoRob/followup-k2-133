@@ -1,0 +1,19 @@
+=======================================================
+SGE job submitted on Thu Feb 7 17:58:45 GMT 2019
+JOB ID: 295761
+JOB NAME: mcmc-all4.sh
+PE: smp-verbose
+QUEUE: byslot.q
+MASTER node012.prv.kelvin.compute.estate
+=======================================================
+
+** A machine file has been written to /tmp/sge.machines.295761 on node012.prv.kelvin.compute.estate **
+
+=======================================================
+If an output file was specified on job submission
+Job Output Follows:
+=======================================================
+
+==================================================
+SGE job completed on Thu Feb 7 17:58:47 GMT 2019
+==================================================
