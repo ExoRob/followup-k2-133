@@ -1,0 +1,77 @@
+INFO Worker 0 <247887989>: Using default splits [2997, 3033] for campaign 13
+INFO Worker 0 <247887989>: Starting initial outlier detection
+INFO Worker 0 <247887989>:   Flagged 248 ( 6.5%) outliers.
+INFO Worker 0 <247887989>: Starting Lomb-Scargle period search
+INFO Worker 0 <247887989>:   Using SqrExp position kernel
+INFO Worker 0 <247887989>:   Found periodicity p =   15.10 (fap 4.5121e-84 < 1e-50), will use a quasiperiodic kernel
+INFO Worker 0 <247887989>: Starting global hyperparameter optimisation using DE
+INFO Worker 0 <247887989>:   DE iteration   0 -ln(L) -5216.2
+INFO Worker 0 <247887989>:   DE iteration   1 -ln(L) -5230.6
+INFO Worker 0 <247887989>:   DE iteration   2 -ln(L) -5230.6
+INFO Worker 0 <247887989>:   DE iteration   3 -ln(L) -5230.6
+INFO Worker 0 <247887989>:   DE iteration   4 -ln(L) -5280.3
+INFO Worker 0 <247887989>:   DE iteration   5 -ln(L) -5280.3
+INFO Worker 0 <247887989>:   DE iteration   6 -ln(L) -5315.9
+INFO Worker 0 <247887989>:   DE iteration   7 -ln(L) -5315.9
+INFO Worker 0 <247887989>:   DE iteration   8 -ln(L) -5315.9
+INFO Worker 0 <247887989>:   DE iteration   9 -ln(L) -5315.9
+INFO Worker 0 <247887989>:   DE iteration  10 -ln(L) -5315.9
+INFO Worker 0 <247887989>:   DE iteration  11 -ln(L) -5315.9
+INFO Worker 0 <247887989>:   DE iteration  12 -ln(L) -5315.9
+INFO Worker 0 <247887989>:   DE iteration  13 -ln(L) -5318.5
+INFO Worker 0 <247887989>:   DE iteration  14 -ln(L) -5324.5
+INFO Worker 0 <247887989>:   DE iteration  15 -ln(L) -5331.2
+INFO Worker 0 <247887989>:   DE iteration  16 -ln(L) -5331.2
+INFO Worker 0 <247887989>:   DE iteration  17 -ln(L) -5331.2
+INFO Worker 0 <247887989>:   DE iteration  18 -ln(L) -5331.2
+INFO Worker 0 <247887989>:   DE iteration  19 -ln(L) -5331.2
+INFO Worker 0 <247887989>:   DE iteration  20 -ln(L) -5333.2
+INFO Worker 0 <247887989>:   DE iteration  21 -ln(L) -5333.2
+INFO Worker 0 <247887989>:   DE iteration  22 -ln(L) -5340.5
+INFO Worker 0 <247887989>:   DE iteration  23 -ln(L) -5340.5
+INFO Worker 0 <247887989>:   DE iteration  24 -ln(L) -5340.5
+INFO Worker 0 <247887989>:   DE iteration  25 -ln(L) -5340.5
+INFO Worker 0 <247887989>:   DE iteration  26 -ln(L) -5340.5
+INFO Worker 0 <247887989>:   DE iteration  27 -ln(L) -5340.5
+INFO Worker 0 <247887989>:   DE iteration  28 -ln(L) -5340.5
+INFO Worker 0 <247887989>:   DE iteration  29 -ln(L) -5341.8
+INFO Worker 0 <247887989>:   DE iteration  30 -ln(L) -5341.8
+INFO Worker 0 <247887989>:   DE iteration  31 -ln(L) -5341.8
+INFO Worker 0 <247887989>:   DE iteration  32 -ln(L) -5341.8
+INFO Worker 0 <247887989>:   DE iteration  33 -ln(L) -5342.5
+INFO Worker 0 <247887989>:   DE iteration  34 -ln(L) -5342.5
+INFO Worker 0 <247887989>:   DE iteration  35 -ln(L) -5342.5
+INFO Worker 0 <247887989>:   DE iteration  36 -ln(L) -5342.5
+INFO Worker 0 <247887989>:   DE iteration  37 -ln(L) -5342.5
+INFO Worker 0 <247887989>:   DE iteration  38 -ln(L) -5342.5
+INFO Worker 0 <247887989>:   DE iteration  39 -ln(L) -5343.2
+INFO Worker 0 <247887989>:   DE iteration  40 -ln(L) -5343.2
+INFO Worker 0 <247887989>:   DE iteration  41 -ln(L) -5343.9
+INFO Worker 0 <247887989>:   DE iteration  42 -ln(L) -5343.9
+INFO Worker 0 <247887989>:   DE iteration  43 -ln(L) -5343.9
+INFO Worker 0 <247887989>:   DE iteration  44 -ln(L) -5343.9
+INFO Worker 0 <247887989>:   DE iteration  45 -ln(L) -5343.9
+INFO Worker 0 <247887989>:   DE iteration  46 -ln(L) -5343.9
+INFO Worker 0 <247887989>:   DE iteration  47 -ln(L) -5343.9
+INFO Worker 0 <247887989>:   DE iteration  48 -ln(L) -5343.9
+INFO Worker 0 <247887989>:   DE iteration  49 -ln(L) -5343.9
+INFO Worker 0 <247887989>:   DE iteration  50 -ln(L) -5343.9
+INFO Worker 0 <247887989>:   DE iteration  51 -ln(L) -5343.9
+INFO Worker 0 <247887989>:   DE iteration  52 -ln(L) -5344.0
+INFO Worker 0 <247887989>:   DE iteration  53 -ln(L) -5344.0
+INFO Worker 0 <247887989>:   DE finished in 214 seconds
+INFO Worker 0 <247887989>:   DE minimum found at: [-5.998e+00  1.598e+00  1.676e+01  2.222e-02 -5.344e+00  2.243e+01  2.986e+01 -3.636e+00]
+INFO Worker 0 <247887989>:   DE -ln(L) -5344.0
+INFO Worker 0 <247887989>: Starting local hyperparameter optimisation
+INFO Worker 0 <247887989>:   Local minimum found at: [-6.000e+00  1.505e+00  1.586e+01  2.035e-02 -5.336e+00  2.022e+01
+  3.123e+01 -3.639e+00]
+INFO Worker 0 <247887989>: Starting final outlier detection
+INFO Worker 0 <247887989>:      14 too high
+INFO Worker 0 <247887989>:      44 too low
+INFO Worker 0 <247887989>:     195 not finite
+INFO Worker 0 <247887989>: Computing time and position trends
+INFO Worker 0 <247887989>:   CDPP - raw - 182.688
+INFO Worker 0 <247887989>:   CDPP - position component removed - 97.089
+INFO Worker 0 <247887989>:   CDPP - full reduction - 97.055
+INFO Worker 0 <247887989>: Detrending time 222.521
+INFO Worker 0 <247887989>: Finished

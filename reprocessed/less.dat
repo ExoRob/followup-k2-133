@@ -1,0 +1,100 @@
+ --- modulename: util, funcname: debug
+util.py(73):     if _logger:
+process.py(268):                 exitcode = 0
+process.py(270):                 util._exit_function()
+ --- modulename: util, funcname: _exit_function
+util.py(306):     info('process shutting down')
+ --- modulename: util, funcname: info
+util.py(77):     if _logger:
+util.py(307):     debug('running all "atexit" finalizers with priority >= 0')
+ --- modulename: util, funcname: debug
+util.py(73):     if _logger:
+util.py(308):     _run_finalizers(0)
+ --- modulename: util, funcname: _run_finalizers
+util.py(257):     if _finalizer_registry is None:
+util.py(263):     if minpriority is None:
+util.py(266):         f = lambda p : p[0][0] is not None and p[0][0] >= minpriority
+util.py(271):     items = [x for x in _finalizer_registry.items() if f(x)]
+util.py(272):     items.sort(reverse=True)
+util.py(274):     for key, finalizer in items:
+util.py(282):     if minpriority is None:
+util.py(310):     if current_process() is not None:
+ --- modulename: process, funcname: current_process
+process.py(63):     return _current_process
+util.py(321):         for p in active_children():
+ --- modulename: process, funcname: active_children
+process.py(69):     _cleanup()
+ --- modulename: process, funcname: _cleanup
+process.py(78):     for p in list(_current_process._children):
+process.py(70):     return list(_current_process._children)
+util.py(326):         for p in active_children():
+ --- modulename: process, funcname: active_children
+process.py(69):     _cleanup()
+ --- modulename: process, funcname: _cleanup
+process.py(78):     for p in list(_current_process._children):
+process.py(70):     return list(_current_process._children)
+util.py(330):     debug('running the remaining "atexit" finalizers')
+ --- modulename: util, funcname: debug
+util.py(73):     if _logger:
+util.py(331):     _run_finalizers()
+ --- modulename: util, funcname: _run_finalizers
+util.py(257):     if _finalizer_registry is None:
+util.py(263):     if minpriority is None:
+util.py(264):         f = lambda p : p[0][0] is not None
+util.py(271):     items = [x for x in _finalizer_registry.items() if f(x)]
+util.py(272):     items.sort(reverse=True)
+util.py(274):     for key, finalizer in items:
+util.py(282):     if minpriority is None:
+util.py(283):         _finalizer_registry.clear()
+process.py(287):         util.info('process exiting with exitcode %d' % exitcode)
+ --- modulename: util, funcname: info
+util.py(77):     if _logger:
+process.py(288):         return exitcode
+forking.py(127):                 sys.stdout.flush()
+     self.__block.notify_all()
+pool.py(439):                     get()
+ --- modulename: threading, funcname: notifyAll
+threading.py(407):         self.notify(len(self.__waiters))
+ --- modulename: threading, funcname: notify
+threading.py(383):         if not self._is_owned():
+ --- modulename: threading, funcname: _is_owned
+threading.py(303):         if self.__lock.acquire(0):
+threading.py(307):             return True
+threading.py(385):         __waiters = self.__waiters
+threading.py(386):         waiters = __waiters[:n]
+threading.py(387):         if not waiters:
+threading.py(389):                 self._note("%s.notify(): no waiters", self)
+ --- modulename: threading, funcname: _note
+threading.py(65):             if self.__verbose:
+threading.py(390):             return
+threading.py(865):         self.__block.release()
+pool.py(436):                 for i in range(10):
+pool.py(437):                     if not outqueue._reader.poll():
+pool.py(438):                         break
+pool.py(443):         debug('result handler exiting: len(cache)=%s, thread._state=%s',
+pool.py(444):               len(cache), thread._state)
+ --- modulename: util, funcname: debug
+util.py(73):     if _logger:
+threading.py(758):             del self.__target, self.__args, self.__kwargs
+ --- modulename: threading, funcname: _note
+threading.py(65):             if self.__verbose:
+ --- modulename: threading, funcname: __stop
+threading.py(860):         if not hasattr(self, '_Thread__block'):
+threading.py(862):         self.__block.acquire()
+threading.py(863):         self.__stopped = True
+threading.py(864):         self.__block.notify_all()
+ --- modulename: threading, funcname: notifyAll
+threading.py(407):         self.notify(len(self.__waiters))
+ --- modulename: threading, funcname: notify
+threading.py(383):         if not self._is_owned():
+ --- modulename: threading, funcname: _is_owned
+threading.py(303):         if self.__lock.acquire(0):
+threading.py(307):             return True
+threading.py(385):         __waiters = self.__waiters
+threading.py(386):         waiters = __waiters[:n]
+threading.py(387):         if not waiters:
+threading.py(389):                 self._note("%s.notify(): no waiters", self)
+ --- modulename: threading, funcname: _note
+threading.py(65):             if self.__verbose:
+threading.py(390):             return
+threading.py(865):         self.__block.release()

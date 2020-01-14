@@ -1,0 +1,19 @@
+=======================================================
+SGE job submitted on Fri Oct 26 22:41:09 BST 2018
+JOB ID: 250638
+JOB NAME: bootstrap.sh
+PE: smp-verbose
+QUEUE: byslot.q
+MASTER node031.prv.kelvin.compute.estate
+=======================================================
+
+** A machine file has been written to /tmp/sge.machines.250638 on node031.prv.kelvin.compute.estate **
+
+=======================================================
+If an output file was specified on job submission
+Job Output Follows:
+=======================================================
+
+==================================================
+SGE job completed on Sun Oct 28 11:18:12 GMT 2018
+==================================================
