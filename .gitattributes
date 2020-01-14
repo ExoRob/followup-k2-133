@@ -1,2 +1,6 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+*.pkl filter=lfs diff=lfs merge=lfs -text
+**/*.pkl filter=lfs diff=lfs merge=lfs -text
+reprocessed/mcmc/mcmc.pkl filter=lfs diff=lfs merge=lfs -text
+reprocessed/mcmc/mcmc-long.pkl filter=lfs diff=lfs merge=lfs -text

@@ -1,2 +1,0 @@
-improve tracing
-- try flux-weighted mean centroiding for trace
