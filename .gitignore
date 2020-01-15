@@ -3,6 +3,8 @@
 
 *.pyc
 
+*.pkl
+
 liris/lirisdr
 reprocessed/env
 liris-spectra
